@@ -190,6 +190,7 @@ manageController.controller('topicDetailController', ['$scope', 'myAlertService'
         topicService.getTopicById($scope);
     };
 
+    //打开时默认获取信息
     $scope.getTopicById();
 
 }]);
