@@ -1,0 +1,40 @@
+<div ng-controller="topicDetailController">
+    <div class="am-g">
+        <strong>{{topic.username}}</strong>
+    </div>
+    <div class="am-fl">
+        <small>{{topic.sendtime*1000 | date:'yyyy年MM月dd日HH:mm:ss'}}</small>
+        <small style="padding-left:10px">{{topic.visible}}</small>
+    </div>
+    <div class="am-g">
+        <div class="am-fr">
+            <small style="padding-left:10px"><i class="am-icon-thumbs-up"></i>  {{topic.agreeCount}}</small>
+            <small style="padding-left:10px"><i class="am-icon-thumbs-down"></i>  {{topic.disagreeCount}}</small>
+            <small style="padding-left:10px;padding-right:20px"><i class="am-icon-reply"></i>  {{topic.shareCount}}</small>
+        </div>
+    </div>
+    <article class="am-article ">
+        <div class="am-article-bd">
+            <hr class="am-article-hrider"></hr>
+            <p>{{topic.content}}</p>
+            <hr class="am-article-hrider"></hr>
+        </div>
+    </article>
+    <div class="am-panel am-panel-default">
+        <div class="am-panel-hd"><small>评论</small></div>
+        <div class="am-panel-bd" ng-repeat="reply in replys">
+            <small style="font-weight:bold">{{reply.username}} : </small>
+            <small>{{reply.content}}</small>
+            <div class="am-g">
+                <div class="am-fl">
+                    <small>  {{reply.sendtime*1000 | date:'yyyy年MM月dd日HH:mm:ss'}}  </small>
+                </div>
+                <div class="am-fr">
+                    <div class="am-btn-group">
+                        <button class="am-btn am-btn-default am-btn-xs am-text-danger " ng-click="deleteReply(reply.id)" class=" am-text-danger">删除</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

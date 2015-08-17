@@ -1,0 +1,148 @@
+package com.forex.common;
+
+import java.sql.SQLException;
+
+import com.forex.controller.CombinationController;
+import com.forex.controller.GroupController;
+import com.forex.controller.ImageController;
+import com.forex.controller.MessageController;
+import com.forex.controller.NewsController;
+import com.forex.controller.ReplyController;
+import com.forex.controller.SuggestController;
+import com.forex.controller.TopicController;
+import com.forex.controller.UserController;
+import com.forex.controller.manage.ExceptionController;
+import com.forex.controller.web.WebController;
+import com.forex.factory.SaveDirectoryFactory;
+import com.forex.index.TestController;
+import com.forex.model.bean.Group;
+import com.forex.model.bean.Message;
+import com.forex.model.bean.NewsReply;
+import com.forex.model.bean.Topic;
+import com.forex.model.bean.TopicReply;
+import com.forex.model.bean.TradeReport;
+import com.forex.model.bean.User;
+import com.jfinal.config.Constants;
+import com.jfinal.config.Handlers;
+import com.jfinal.config.Interceptors;
+import com.jfinal.config.JFinalConfig;
+import com.jfinal.config.Plugins;
+import com.jfinal.config.Routes;
+import com.jfinal.core.JFinal;
+import com.jfinal.ext.interceptor.ExceptionInterceptor;
+import com.jfinal.plugin.activerecord.ActiveRecordPlugin;
+import com.jfinal.plugin.c3p0.C3p0Plugin;
+import com.jfinal.plugin.ehcache.EhCachePlugin;
+
+/**
+ * API引导式配置
+ */
+public class BaseConfig extends JFinalConfig {
+
+	public static final String News_Ds_Config_Name = "newsPool";
+
+	public static boolean DEV_MODE;
+
+	/**
+	 * 配置常量
+	 */
+	@Override
+	public void configConstant(Constants me) {
+		// 加载少量必要配置，随后可用getProperty(...)获取值
+		loadPropertyFile("jdbc_config.txt");
+		DEV_MODE = getPropertyToBoolean("devMode", false);
+		me.setDevMode(DEV_MODE);
+		// me.setViewType(ViewType.JSP);
+
+		// me.setUploadedFileSaveDirectory("exception");
+
+		String os = System.getProperty("os.name");
+		if (!os.contains("Mac") && !os.startsWith("win")) {
+			com.forex.common.Constants.SaveDirectory = getProperty("savePath");
+			SaveDirectoryFactory
+					.initSaveDirectory(com.forex.common.Constants.SaveDirectory);
+		}
+	}
+
+	/**
+	 * 配置路由
+	 */
+	@Override
+	public void configRoute(Routes me) {
+		me.add("/", TestController.class, "/index"); // 第三个参数为该Controller的视图存放路径
+		me.add("/user", UserController.class); // 第三个参数省略时默认与第一个参数值相同，在此即为
+												// "/user"
+		me.add("/topic", TopicController.class);
+		me.add("/reply", ReplyController.class);
+		me.add("/group", GroupController.class);
+		me.add("/message", MessageController.class);
+		me.add("/suggest", SuggestController.class);
+		me.add("/web", WebController.class);
+		me.add("/image", ImageController.class);
+		me.add("/news", NewsController.class);
+		me.add("/combine", CombinationController.class);
+
+		me.add("/manage/exception", ExceptionController.class);
+		me.add("/manage/user", com.forex.controller.manage.UserController.class);
+		me.add("/manage/topic",
+				com.forex.controller.manage.TopicController.class);
+	}
+
+	/**
+	 * 配置插件
+	 */
+	@Override
+	public void configPlugin(Plugins me) {
+		// 配置C3p0数据库连接池插件
+		C3p0Plugin c3p0Plugin = new C3p0Plugin(getProperty("jdbcUrl"),
+				getProperty("user"), getProperty("password").trim());
+		ActiveRecordPlugin arp = new ActiveRecordPlugin(c3p0Plugin);
+		me.add(c3p0Plugin);
+		me.add(arp);
+
+		arp.addMapping("userinfo", User.class); // 映射userinfo 表到 User模型
+		arp.addMapping("groupinfo", Group.class);
+		arp.addMapping("trade_report", TradeReport.class);
+		arp.addMapping("topic", Topic.class);
+		arp.addMapping("topic_reply", TopicReply.class);
+		arp.addMapping("news_reply", NewsReply.class);
+		arp.addMapping("message", Message.class);
+		// arp.addMapping("news", News.class);
+		me.add(new EhCachePlugin()); // 配置缓存插件
+	}
+
+	/**
+	 * 配置全局拦截器
+	 */
+	@Override
+	public void configInterceptor(Interceptors me) {
+		// me.add(new AuthInterceptor());
+		ExceptionInterceptor exceptionInterceptor = new ExceptionInterceptor();
+		exceptionInterceptor.addMapping(IllegalArgumentException.class,
+				new ExceptionHandlerRender("不合法的参数!"));
+		exceptionInterceptor.addMapping(NullPointerException.class,
+				new ExceptionHandlerRender("缺少必须参数!"));
+		exceptionInterceptor.addMapping(SQLException.class,
+				new ExceptionHandlerRender("数据库操作出现异常!"));
+		exceptionInterceptor.addMapping(Exception.class,
+				new ExceptionHandlerRender("内部服务器错误!"));
+		me.add(exceptionInterceptor);
+	}
+
+	/**
+	 * 配置处理器
+	 */
+	@Override
+	public void configHandler(Handlers me) {
+
+	}
+
+	/**
+	 * 建议使用 JFinal 手册推荐的方式启动项目 运行此 main
+	 * 方法可以启动项目，此main方法可以放置在任意的Class类定义中，不一定要放于此
+	 */
+	public static void main(String[] args) {
+		System.setProperty("org.apache.jasper.compiler.disablejsr199", "true");
+		JFinal.start("WebRoot", 8080, "/Community", 5);
+	}
+}

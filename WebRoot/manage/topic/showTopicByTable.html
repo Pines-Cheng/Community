@@ -1,0 +1,82 @@
+<div ng-controller="topicTableController">
+    <div class="am-g">
+        <div class="am-u-sm-3 am-u-end">
+            <div class="am-btn-toolbar">
+                <div class="am-btn-group am-btn-group-xs">
+                    <!-- 可以放在指令中 -->
+                    <button type="button" class="am-btn am-btn-default am-btn-lg" ng-click="refresh()"><span class="am-icon-retweet"></span> 刷新</button>
+                    <button type="button" class="am-btn am-btn-default"><span class="am-icon-plus" ng-click="add()"></span> 新增</button>
+                    <button type="button" class="am-btn am-btn-danger am-btn-lg" ng-click="deleteCheckedTopics()"><span class="am-icon-trash-o"></span> 删除</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="am-g">
+        <div class="am-u-sm-2 am-fr">
+            <span class="am-text-secondary">每页</span>
+            <select ng-model="paginate.pageSize" ng-change="refresh()" data-am-selected>
+                <option value="3">3</option>
+                <option value="5">5</option>
+                <option value="10" selected>10</option>
+                <option value="15">15</option>
+                <option value="20">20</option>
+            </select>
+            <span class="am-text-secondary">条</span>
+        </div>
+    </div>
+    <div class="am-g">
+        <div class="am-u-sm-12">
+            <form class="am-form">
+                <table id="topicTable" class="am-table am-table-striped am-table-hover table-main am-text-nowrap  am-table-centered" style="table-layout: fixed;">
+                    <thead>
+                        <tr>
+                            <th class="table-check">
+                                <input type="checkbox" ng-model="selectedAll" />
+                            </th>
+                            <th style="width:5%;">用户ID</th>
+                            <th style="width:10%;">用户名</th>
+                            <th style="width:15%;">创建时间</th>
+                            <th style="width:5%;">组ID</th>
+                            <th style="width:5%;">帖子ID</th>
+                            、
+                            <th style="width:10%;">权限</th>
+                            <th style="width:25%;">内容预览</th>
+                            <th style="width:5%;">图片数</th>
+                            <th style="width:5%;">评论数</th>
+                            <th style="width:15%;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="topic in topics">
+                            <td>
+                                <input ng-checked="selectedAll" type="checkbox" topicId={{topic.id}} />
+                            </td>
+                            <td>{{topic.user_id}}</td>
+                            <td><a href="#">{{topic.username}}</a></td>
+                            <td>{{topic.sendtime*1000 | date:'yyyy-MM-dd HH:mm:ss'}} </td>
+                            <td>{{topic.group_id}}</td>
+                            <td>{{topic.id}}</td>
+                            <td>{{topic.visible}}</td>
+                            <td class="am-hide-sm-only" style="text-overflow:ellipsis;overflow: hidden;">{{topic.content}}</td>
+                            <td class="am-hide-sm-only">{{topic.image_num}}</td>
+                            <td>{{topic.replyCount}}</td>
+                            <td>
+                                <div>
+                                    <div class="am-btn-group am-btn-group-xs">
+                                        <button my-fancybox  ng-click="openFancybox(templates.topicDetail);setSelectTopic(topic.id,topic.user_id)" class=" am-btn am-btn-default am-btn-xs am-text-secondary "><span class="am-icon-pencil-square-o"></span> 编辑</button>
+                                        <!--  <button class="am-btn am-btn-default am-btn-xs am-hide-sm-only"><span class="am-icon-copy"></span> 复制</button>-->
+                                        <button class="am-btn am-btn-default am-btn-xs am-text-danger am-hide-sm-only" ng-click="deleteCheckedTopic(topic.id)"><span class="am-icon-trash-o">删除</span> </button>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </form>
+            <div class="am-u-sm-4 mg-fc">
+                <span>共</span><span ng-bind="paginate.topicSum"></span><span>条结果</span>
+            </div>
+            <my-paginate></my-paginate>
+        </div>
+    </div>
+</div>

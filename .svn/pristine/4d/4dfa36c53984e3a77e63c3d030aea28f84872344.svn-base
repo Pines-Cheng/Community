@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>测试页面</title>
+</head>
+<body>
+	<br />
+	<hr />
+	测试文件上传：
+	<form action="uploadFiles" method="post"
+		enctype="multipart/form-data">
+		<table>
+			<tr>
+				<th><input type="file" name=file/></th>
+				<th><input type="submit" value="提交"></th>
+			</tr>
+		</table>
+	</form>
+	<hr>
+</body>
+</html>

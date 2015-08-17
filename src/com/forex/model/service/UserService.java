@@ -1,0 +1,336 @@
+package com.forex.model.service;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.forex.model.bean.Authority;
+import com.forex.model.bean.User;
+import com.forex.util.KeyUtil;
+import com.forex.util.MD5;
+import com.forex.util.TimeUtil;
+import com.jfinal.aop.Before;
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Record;
+import com.jfinal.plugin.activerecord.tx.Tx;
+import com.jfinal.plugin.ehcache.CacheKit;
+
+public class UserService {
+
+	private static final String CODE_CACHE = "codeCache";
+	private static final int DEFAULT_SIZE = 10;
+
+	private static final String queryColumns = "u.id,u.tel,u.username,u.intro,u.register_time,u.exp,u.havePhoto,u.copy_num";
+
+	private static final String getUserByLoginSQL = "select " + queryColumns + " from userinfo u where tel=? and password=MD5(CONCAT(salt, ?, ''))";
+	private static final String getFansCountSQL = "select count(*) from fans where user_id=?";
+	private static final String getMarkUserCountSQL = "select count(*) from score where receiver_id=?";
+	private static final String getTotalScoreSQL = "select sum(score) from score where receiver_id=?";
+	private static final String getUserScoreSQL = "select * from score where remark_id=? and receiver_id=?";
+	private static final String updateUserScoreSQL = "update score set score=? where remark_id=? and receiver_id=?";
+
+	private static final String getGroupUserSQL = "select " + queryColumns + ",g.exp,g.auth from groupuser g,userinfo u where u.id=g.user_id and g.group_id=?";
+	private static final String getLimitGroupUserSQL = "select " + queryColumns + ",g.exp,g.auth from groupuser g,userinfo u where u.id=g.user_id and g.group_id=? order by u.exp desc limit ?, ?";
+	
+	private static final String getTopUsersSQL = "select " + queryColumns + ",t.* from userinfo u left join trade_data t on u.account=t.login order by t.profit desc limit ?,? ";
+
+	private static final String recommendUsesSql = "select " + queryColumns + " from userinfo u where grade > 9 order by grade desc";
+	
+	private TokenService tokenService = new TokenService();
+	
+	public User getUserById(long userId) {
+		User user = User.me.findById(userId);
+		user.clearPwdAndSalt();
+		long id = user.get("id");
+		user.put("fansCount", getFansCount(id));
+		user.put("avgScore", getAverageScore(id));
+		return user;
+	}
+	
+	public User getUserByDeviceId(String deviceId) {
+		return User.me.findFirst("select " + queryColumns + " from userinfo u where u.device_id=? limit 1", deviceId);
+	}
+
+	/**
+	 * 新增用户
+	 * @param tel ：用户手机号码
+	 * @param password ：用MD5加密后的密码
+	 */
+	@Before(Tx.class)
+	public User addUser(String tel, String password, String deviceId) {
+		String salt = KeyUtil.createKey(6);
+		User user = new User().set("tel", tel).set("device_id", deviceId)
+				.set("password", MD5.encode(salt + password)).set("salt", salt)
+				.set("register_time", TimeUtil.getCurrentTime());
+		boolean result = user.save();
+		if (result) {
+			long id = user.getLong("id");
+			createToken(id, Authority.Write);
+			return user;
+		}
+		return null;
+	}
+	
+	public User addUser(String deviceId) {
+		User user = User.me.findFirst("select " + queryColumns + " from userinfo u where device_id=?", deviceId);
+		if (user != null) {
+			return user;
+		}
+		user = new User().set("device_id", deviceId).set("register_time", TimeUtil.getCurrentTime());
+		boolean result = user.save();
+		if (result) {
+			long id = user.getLong("id");
+			createToken(id, Authority.Read);
+			return user;
+		}
+		return null;
+	}
+
+	/**
+	 * 修改个人资料
+	 * @param id: 用户Id
+	 * @param username：用户名称
+	 * @param intro：用户介绍
+	 * @param havePhoto：用户是否上传了图片
+	 * @return
+	 */
+	public boolean update(long id, String username, String intro,
+			boolean havePhoto) {
+		User user = new User().set("id", id);
+		if (username != null)
+			user.set("username", username);
+		if (intro != null)
+			user.set("intro", intro);
+		if (havePhoto)
+			user.set("havePhoto", true);
+		if (username != null || intro != null || havePhoto) {
+			return user.update();
+		}
+		return false;
+	}
+	
+	/**
+	 * 跟新基本信息(先体验APP再注册的)
+	 * @param id: 用户Id
+	 * @param tel: 用户手机号码
+	 * @param password: 用户密码
+	 * @return
+	 */
+	public boolean updateBase(long id, String tel, String password) {
+		String salt = KeyUtil.createKey(6);
+		User user = new User().set("id", id).set("tel", tel)
+				.set("password", MD5.encode(salt + password)).set("salt", salt);
+		boolean result = user.update();
+		
+		if (result) {
+			tokenService.createToken(id, Authority.Write);
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * 根据用户名和密码获得用户(登录获得用户)
+	 * @param tel ：用户手机号码
+	 * @param password ：MD5加密后的密码
+	 * @return
+	 */
+	public User getUser(String tel, String password) {
+		return User.me.findFirst(getUserByLoginSQL, tel, password);
+	}
+
+	public int getFansCount(long userId) { // sina微博的粉丝数量最多都没有一个亿
+		return parseInt(Db.findFirst(getFansCountSQL, userId).getColumnValues()[0]);
+	}
+
+	public float getAverageScore(long userId) {
+		int totalScore = parseInt(Db.findFirst(getTotalScoreSQL, userId)
+				.getColumnValues()[0]);
+		int userNum = parseInt(Db.findFirst(getMarkUserCountSQL, userId)
+				.getColumnValues()[0]);
+		if (userNum == 0)
+			return 0; // 避免除0错误
+		return (float) (totalScore * 1.0 / userNum);
+	}
+
+	/** 给用户进行评分 **/
+	public boolean mark(long userId, long receiverId, int score, String content) {
+		// TODO 评分时提交了评价，暂时没有处理
+		System.out.println("Mark content = " + content);
+		Record record = Db.findFirst(getUserScoreSQL, userId, receiverId);
+		if (record == null) {
+			record = new Record().set("remark_id", userId)
+					.set("receiver_id", receiverId).set("score", score);
+			return Db.save("score", record);
+		} else { // 如果已经评过分，则进行修改
+			return Db.update(updateUserScoreSQL, score, userId, receiverId) > 0;
+		}
+	}
+
+	/** 关注某个用户 **/
+	public boolean payAttention(long userId, long receiverId) {
+		Record record = new Record().set("user_id", receiverId).set("fans_id",
+				userId);
+		return Db.save("fans", record);
+	}
+
+	/** 取消用户关注 **/
+	public boolean cancelAttention(long userId, long receiverId) {
+		String sql = "delete from fans where user_id=? and fans_id=?";
+		return Db.update(sql, receiverId, userId) > 0;
+	}
+
+	/**
+	 * 得到某个群组下的所有用户
+	 */
+	public List<User> getGroupUsers(long groupId) {
+		return User.me.find(getGroupUserSQL, groupId);
+	}
+	
+	public Map<String, List<User>> getInviteUsers(long groupId) {
+		//TODO 后面改成好友
+		List<User> nUsers = User.me.find(getLimitGroupUserSQL, groupId, 0, 20);
+		List<User> rUsers = User.me.find(recommendUsesSql);
+		Map<String, List<User>> map = new HashMap<String, List<User>>();
+		map.put("rUsers", rUsers);
+		map.put("nUsers", nUsers);
+		return map;
+	}
+
+	/** 得到关注的用户的Ids **/
+	public List<Long> getFollowedUserIds(long fansId) {
+		List<Long> ids = new ArrayList<Long>();
+		String sql = "select user_id from fans where fans_id=?";
+		for (Record record : Db.find(sql, fansId)) {
+			ids.add(record.getLong("user_id"));
+		}
+		return ids;
+	}
+
+	//======token相关=======//
+	public String createToken(long userId, int authority) {
+		return tokenService.createToken(userId, authority);
+	}
+	
+	public Authority getUserIdByToken(String token) {
+		return tokenService.getUserIdByToken(token);
+	}
+	
+	public Authority getToken(long userId) {
+		return tokenService.getToken(userId);
+	}
+	
+	public Authority getToken(long userId, boolean inCache) {
+		return tokenService.getToken(userId, inCache);
+	}
+
+	//======验证码相关=======//
+	/** 生成手机邀请码并通过短信发送给用户手机 **/
+	public boolean createCode(String tel) {
+		String code = KeyUtil.createCode();
+		CacheKit.put(CODE_CACHE, tel, code);
+		return sendMessgae(code);
+	}
+
+	/** 验证手机短信邀请码 **/
+	public boolean validatorCode(String tel, String code) {
+		// TODO 暂时没有实现手机短信的验证，实现后只需把下面的注释开启
+		// return code != null && code.equals(CacheKit.get(CODE_CACHE, tel));
+		return code != null && code.equals("123456");
+	}
+
+	/** 发送短消息 **/
+	public boolean sendMessgae(String code) {
+		// TODO 发送短信的方法还没实现
+		System.out.println("Sending message...");
+		return true;
+	}
+
+	/** 得到按盈利排名的用户列表 **/
+	@Before(Tx.class)
+	public List<User> getTopUsers(int start) {
+		List<User> users = User.me.find(getTopUsersSQL, start, start + DEFAULT_SIZE);
+		setUsersInfo(users);
+		return users;
+	}
+
+	@Before(Tx.class)
+	public List<User> getCopyUsers(long userId) {
+		String findSql = "select u.* from userinfo u, copyuser cu where cu.user_id=? and u.id=cu.copy_id";
+		List<User> users = User.me.find(findSql, userId);
+		setUsersInfo(users);
+		return users;
+	}
+
+	@Before(Tx.class)
+	public List<User> getFollowedUsers(long userId) {
+		String findSql = "select u.* from userinfo u, fans f where f.fans_id=? and u.id=f.user_id";
+		List<User> users = User.me.find(findSql, userId);
+		setUsersInfo(users);
+		return users;
+	}
+	
+	public void addInterests(long userId, String interests) {
+		Record record = Db.findFirst("select * from user_atten_tags where user_id = ?", userId);
+		if (record == null) {
+			record = new Record().set("user_id", userId).set("tags", interests);
+			Db.save("user_atten_tags", record);
+		} else {
+			Db.update("update user_atten_tags set tags=? where user_id=?", interests, userId);
+		}
+	}
+
+	@Before(Tx.class)
+	private void setUsersInfo(List<User> users) {
+		for (User user : users) {
+			long id = user.get("id");
+			user.put("fansCount", getFansCount(id));
+			user.put("avgScore", getAverageScore(id));
+			user.clearPwdAndSalt();
+		}
+	}
+
+	/**
+	 * 复制交易，如果被复制的人复制了其他人，则复制的是被复制的人复制的人的交易
+	 * 既 A->B 现在C要复制A的交易，那么实际上C复制的是B的交易，以此类推
+	 * @param userId
+	 * @param copyId
+	 * @return
+	 */
+	@Before(Tx.class)
+	public boolean copyInvest(long userId, long copyId) {
+		Record copyRecord = Db.findFirst("select copy_id from copyuser where user_id=?", copyId);
+		long trueCopyId = copyId;
+		if (copyRecord != null) {
+			trueCopyId = copyRecord.getLong("copy_id");
+		} 
+		
+		Record record = new Record().set("user_id", userId)
+				.set("copy_id", trueCopyId)
+				.set("copy_time", TimeUtil.getCurrentTime());
+		boolean res1 = Db.save("copyuser", record);
+		String updateSql = "update userinfo set copy_num = copy_num+1 where id=?";
+		boolean res2 = Db.update(updateSql, userId) > 0;
+		return res1 && res2;
+	}
+
+	private int parseInt(Object object) {
+		int result = 0;
+		try {
+			if (object instanceof BigDecimal) {
+				BigDecimal i = (BigDecimal) object;
+				if (i != null)
+					return i.intValue();
+			} else if (object instanceof Long) {
+				Long i = (Long) object;
+				if (i != null)
+					return i.intValue();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return result;
+	}
+}

@@ -1,0 +1,12 @@
+<!-- 参数：alerts{ }
+	alert.type：警告框类型  默认为蓝色
+	alert.closeable：是否可关闭 
+	alert.content：警告框内容
+	方法（事件）：
+	ng-click=removeAlert($index) 删除其中一个警告框-->
+<div ng-repeat="alert in alerts">
+    <div class="am-alert am-alert-{{alert.type}}" data-am-alert>
+        <button ng-show={{alert.closeable}} ng-click="removeAlert($index)" type="button" class="am-close">&times;</button>
+        <p style="color:#ff8888">{{alert.content}}</p>
+    </div>
+</div>

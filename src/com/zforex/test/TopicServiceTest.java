@@ -1,0 +1,63 @@
+package com.zforex.test;
+
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import com.forex.common.BaseConfig;
+import com.forex.model.bean.Topic;
+import com.forex.model.service.ReplyService;
+import com.forex.model.service.TopicService;
+import com.jfinal.ext.test.ControllerTestCase;
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Record;
+
+public class TopicServiceTest extends ControllerTestCase<BaseConfig> {
+
+	static TopicService topicService;
+	static ReplyService repyService;
+
+	@BeforeClass
+	public static void onInit() throws Exception {
+		topicService = new TopicService();
+		repyService = new ReplyService();
+	}
+
+	@Test
+	public void test() {
+		// topicService.addAgree(1, 1);
+		// topicService.cancelAgree(1, 1);
+		Topic topic = topicService.addUserTopic(2, "simafei",
+				"This is my test", 0);
+		System.out.println(topic);
+	}
+
+	@Test
+	public void testAddReply() {
+		System.out.println(repyService.addReply(1, "racord", 23, "哈哈"));
+	}
+
+	@Test
+	public void testGetTopics() {
+		// System.out.println(topicService.getNewGroupTopic(1));
+		Record record = Db.use(BaseConfig.News_Ds_Config_Name).findFirst(
+				"select * from AUD_Bank limit 1");
+		System.out.println(record);
+	}
+
+	@Test
+	public void testGetTopicsNum() {
+
+		System.out.println(topicService.getTopicSum());
+	}
+
+	@Test
+	public void testgetPaginateTopics() {
+		System.out.println(topicService.getPaginateTopics(1, 10));
+	}
+
+	@Test
+	public void testgetPaginateTopicsByuserId() {
+		System.out.println(topicService.getPaginateTopicsByUserId(0, 1, 16));
+	}
+
+}

@@ -1,0 +1,140 @@
+//manageController依赖于指令模块
+var manageController = angular.module('manageController', ['manageDirective', 'manageService']);
+
+/**
+ * manage页面的父控制器
+ * @param  {Object} $scope) {                   $scope.pathTips [description]
+ * @return {[type]}         [description]
+ */
+manageController.controller('manageController', function($scope) {
+
+    //将菜单控制定义为对象，以实现双向同步
+    $scope.pathTips = {
+        firstTips: "首页",
+        secondTips: ""
+    };
+
+});
+
+/**
+ * 菜单路径提示
+ * @param  {[type]} $scope) {}]         [description]
+ * @return {[type]}         [description]
+ */
+manageController.controller('pathTipsController', ['$scope', function($scope) {
+
+}]);
+
+
+/**
+ * 左侧菜单控制器
+ * @param  {[type]} $scope) {               $scope.setFirstTips [description]
+ * @return {[type]}         [description]
+ */
+manageController.controller('leftMenuController', ['$scope', function($scope) {
+    $scope.setFirstTips = function setFirstTips(event) {
+        $scope.pathTips.firstTips = $(event.target).text(); //转换成jQuery对象！！
+    };
+
+    $scope.setSecondTips = function setSecondTips(event) {
+
+        $scope.pathTips.firstTips = $(event.target).parent().parent().prev("a").text();
+        $scope.pathTips.secondTips = $(event.target).text(); //转换成jQuery对象！！
+    };
+}]);
+
+//控制安卓异常表格显示与操作
+manageController.controller('androidExceptionController', ['$scope', 'androidExceptionService', function($scope, androidExceptionService) {
+
+    $scope.configs = {
+        "tableTitleConfig": [{
+            "width": "5%",
+            "title": "数量"
+        }, {
+            "width": "10%",
+            "title": "异常"
+        }, {
+            "width": "10%",
+            "title": "时间"
+        }, {
+            "width": "10%",
+            "title": "操作"
+        }],
+        "operateShow": {
+            "edit": true,
+            "copy": false,
+            "delete": true
+        }
+    };
+
+    $scope.table = {
+        totalOperate: false
+    };
+
+
+
+    //通过androidExceptionService获取列表
+    $scope.refresh = function() {
+        androidExceptionService.getFileInfoList().success(function(data, status) {
+            if (data.stat === 'OK' && data.fileInfoList.length !== 0) {
+                $scope.contents = data.fileInfoList;
+            } else if (data.stat === 'OK' && data.fileInfoList.length === 0) {
+                alert("暂时没有异常文件！");
+            } else if (data.stat !== "OK") {
+                alert(data.errText);
+            } else {
+                alert("获取服务器数据失败！");
+            }
+        }).error(function(data, status) {
+            alert("获取服务器数据失败！");
+        });
+    };
+
+    /**
+     * 删除选中的服务端文件
+     * @param  {[type]} fileName [description]
+     * @return {[type]}          [description]
+     */
+    $scope.delete = function(fileName) {
+        //获取超链接作为参数：
+        //1. 通过event获取jquery对象，然后按照jQuery方法获取。
+        //2. 通过数据绑定直接传递进来。  第二种好
+        console.log(fileName);
+        androidExceptionService.deleteFile(fileName).success(function(data, status) {
+            if (data.stat === 'OK' && data.fileInfoList.length !== 0) {
+                $scope.contents = data.fileInfoList;
+            } else if (data.stat === 'OK' && data.fileInfoList.length === 0) {
+                $scope.contents = data.fileInfoList;
+                alert("暂时没有异常文件！");
+            } else if (data.stat !== "OK") {
+                alert(data.errText);
+            } else {
+                alert("获取服务器数据失败！");
+            }
+        }).error(function(data, status) {
+            alert("删除文件错误！");
+        });
+    };
+
+
+
+    $scope.deleteChecked = function() {
+        var filesName = new Array();
+        var checkedInputs = $("#exceptionTable").children("tbody").find("input:checked");
+
+        //使用jQuery的遍历函数
+        checkedInputs.each(function() {
+            var fileName=$(this).attr("fileName");
+            if (fileName !== undefined && fileName !== null) {
+                filesName.push(fileName);
+            }
+        });
+
+        $scope.delete(filesName);
+
+    };
+
+    //每次默认刷新
+    $scope.refresh();
+
+}]);

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html ng-app="manage">
+
+<head>
+    <meta charset="UTF-8">
+    <title>登录</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="format-detection" content="telephone=no">
+    <!-- 指定网页使用 webkit 引擎渲染 -->
+    <meta name="renderer" content="webkit">
+    <!-- 防止百度转码后贴广告 -->
+    <meta http-equiv="Cache-Control" content="no-siteapp" />
+    <!-- CSS -->
+    <link rel="stylesheet" href="http://cdn.amazeui.org/amazeui/2.4.2/css/amazeui.min.css" />
+    <!-- 自己的CSS -->
+    <link rel="stylesheet" href="../css/common.css" />
+</head>
+
+<body  ng-controller="loginController">
+    <div class="am-g">
+        <div class="am-u-lg-4 am-u-md-6 am-u-sm-centered">
+            <img class="am-center am-img-responsive " src="../img/logo.png" alt="logo" />
+            <my-alert></my-alert>
+            <form method="post" class="am-form">
+                <label for="user">账号:</label>
+                <input type="text" ng-model="loginParam.userName" name="user" id="user" value="" maxlength="40" placeholder="请输入用户名" required>
+                <br>
+                <label for="password">密码:</label>
+                <input type="password" ng-model="loginParam.password" name="password" id="password" value="" maxlength="40" placeholder="请输入密码" required>
+                <br>
+                <label for="remember-me">
+                    <input id="remember-me" type="checkbox"> 记住密码
+                </label>
+                <br />
+                <div class="am-cf">
+                    <input type="submit" ng-click="login(loginParam)" name="" value="登 录" class="am-btn am-btn-primary am-btn-sm am-fl">
+                    <input type="reset" name="" value="重置 " class="am-btn am-btn-default am-btn-sm am-fr">
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+
+<!-- lib -->
+<script type="text/javascript" src="../js/lib/jquery/jquery.min.js"></script>
+<!-- angularJS -->
+<script type="text/javascript" src="../js/lib/angularjs/angular.js"></script>
+<script type="text/javascript" src="../js/lib/angularjs/angular-route.js"></script>
+<script type="text/javascript" src="../js/lib/angularjs/angular-animate.js"></script>
+<!-- amazeui -->
+<script type="text/javascript" src="../js/lib/amazeui/amazeui.min.js"></script>
+<!-- angular-ui -->
+<script type="text/javascript" src="../js/lib/angularui/angular-ui-router.js"></script>
+<!--  -->
+<!-- my lib -->
+<script type="text/javascript" src="../js/myangular/service.js"></script>
+<script type="text/javascript" src="../js/myangular/controller.js"></script>
+<script type="text/javascript" src="../js/myangular/filter.js"></script>
+<script type="text/javascript" src="../js/myangular/directive.js"></script>
+<script type="text/javascript" src="../js/myangular/app.js"></script>
+
+</html>

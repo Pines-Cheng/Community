@@ -1,0 +1,187 @@
+package com.forex.controller;
+
+import java.io.File;
+import java.util.List;
+
+import com.forex.controller.interceptor.AuthInterceptor;
+import com.forex.controller.interceptor.UploadFileInterceptor;
+import com.forex.controller.interceptor.WriteAuthInterceptor;
+import com.forex.factory.FileNameFactory;
+import com.forex.factory.SaveDirectoryFactory;
+import com.forex.model.bean.Topic;
+import com.forex.model.service.GroupService;
+import com.forex.model.service.ReplyService;
+import com.forex.model.service.TopicService;
+import com.forex.util.ImageHelper;
+import com.jfinal.aop.Before;
+import com.jfinal.aop.ClearInterceptor;
+import com.jfinal.aop.ClearLayer;
+import com.jfinal.upload.UploadFile;
+
+@Before(WriteAuthInterceptor.class)
+public class TopicController extends BaseController {
+
+	private TopicService service = new TopicService();
+	
+	//需要前台参数 token, visible, username, content 可选 groupId(当visible为Group时必须)
+	@ClearInterceptor(ClearLayer.ALL)
+	@Before(UploadFileInterceptor.class)
+	public void post() {
+		long userId = getAttr("userId");
+		List<UploadFile> files = getAttr("files");
+		int imageNum = files.size();
+		String visible = getPara("visible");
+		String receiverUsers = getPara("rUserIds");
+		String content = getPara("content");
+		
+		if ("ALL".equals(visible)) {
+			Topic topic = service.addUserTopic(userId, getPara("username"),
+					content, imageNum);
+			receiverImages(topic);
+			setPostResult(topic);
+		} else if ("GROUP".equals(visible)) {
+			GroupService groupService = new GroupService();
+			long groupId = getParaToLong("groupId");
+			if (groupService.userInGroup(groupId, userId)) {
+				Topic topic = service.addGroupTopic(userId, getPara("username"),
+						groupId, content, imageNum, receiverUsers);
+				receiverImages(topic);
+				setPostResult(topic);
+			} else {
+				setResult(Status.ILLEGAL_STATE, "您没有在该小组下发言的权限!");
+			}
+		} else {
+			setResult(Status.INVALID_ARGUMENT, "没有传递visible参数，或visible参数不合规范!");
+		}
+		renderJson();
+	}
+	
+	//转载 token, username, content, topicId
+	public void reprint() {
+		long userId = getAttr("userId");
+		renderJson("topic", service.addReprintTopic(userId,
+				getPara("username"), getPara("content"),
+				getParaToLong("topicId")));
+	}
+	
+	// 必须参数 token 可选 groupId, minTopicId 
+	public void getList() {
+		long userId = getAttr("userId");
+		String minString = getPara("minTopicId");
+		List<Topic> topics = null;
+		if (getPara("groupId") == null) {
+			if (getPara("userId") != null) {
+				userId = getParaToLong("userId");
+			}
+			topics = getUserTopic(userId, minString == null);
+		} else {
+			topics = getGroupTopic(minString == null);
+		}
+		renderJson("topics", topics);
+	}
+
+	// 获取所有用户公开的帖子
+	public void pubList() {
+		long userId = getAttr("userId");
+		if (getPara("minTopicId") == null) {
+			renderJson("topics", service.getNewTopics(userId));
+		} else {
+			renderJson("topics", service.getMoreTopics(getParaToInt("minTopicId", 0), userId));
+		}
+	}
+	
+	@ClearInterceptor
+	@Before(AuthInterceptor.class)
+	public void combList() {
+		long userId = getAttr("userId");
+		renderJson("topics", service.getCombinationTopic(userId, getParaToLong("combinationId")));
+	}
+	
+	//必须参数 token, id
+	public void get() {
+		long userId = getAttr("userId");
+		long topicId = getParaToLong("id");
+		//renderJson("topic", service.getTopicById(getParaToLong("id")));
+		ReplyService replyService = new ReplyService();
+		addParam("topic", service.getTopicById(topicId, userId));
+		addParam("replys", replyService.getTopicReply(topicId));
+		renderJson();
+	}
+	
+	public void delete() {
+		long userId = getAttr("userId");
+		long topicId = getParaToLong("topicId");
+		if (!service.delete(topicId, userId)) {
+			setResult(Status.OPERATE_FAILD, "没有权限删除其他人发表的帖子!");
+		}
+		renderJson();
+	}
+	
+	//必须参数 token, topicId #为帖子点赞
+	public void addAgree() {
+		long userId = getAttr("userId");
+		boolean isSupport = getParaToBoolean("isSupport", true);
+		if (!service.addAgree(getParaToLong("topicId"), userId, isSupport)) {
+			setResult(Status.OPERATE_FAILD, "点赞失败!");
+		} 
+		renderJson();
+	}
+	
+	//必须参数topicId #取消赞
+	public void cancelAgree(){
+		long userId = getAttr("userId");
+		if (!service.cancelAgree(getParaToLong("topicId"), userId)) {
+			setResult(Status.OPERATE_FAILD, "取消失败!");
+		} 
+		renderJson();
+	}
+	
+	public void share() {
+		//TODO share以后在服务器端生成链接
+	}
+	
+	public void receiverImages(Topic topic) {
+		List<UploadFile> files = getAttr("files");
+		if (files != null ) {
+			for (int i = 0; i < files.size(); i++) {
+				UploadFile file = files.get(i);
+				String saveDirectory = SaveDirectoryFactory.getTopicSaveDirectory(file.getSaveDirectory());
+				System.out.println(saveDirectory);
+				
+				File destFile = new File(saveDirectory, FileNameFactory.createTopicImageName(topic, i));
+				File thumbFile = new File(saveDirectory, FileNameFactory.thumbTopicImageName(topic, i));
+				file.getFile().renameTo(destFile);
+				ImageHelper.compressPic(destFile, thumbFile);
+			}
+		}
+	}
+	
+	private List<Topic> getGroupTopic(boolean isNew) {
+		long userId = getAttr("userId");
+		if (isNew) {
+			return service.getNewGroupTopic(getParaToLong("groupId"), userId);
+		} else {
+			return service.getMoreGroupTopic(getParaToLong("groupId"), getParaToInt("minTopicId"), userId);
+		}
+	}
+
+	private List<Topic> getUserTopic(long userId, boolean isNew) {
+		//long id = getAttr("userId");
+		//boolean visible = (userId == id); //如果不是自己，不能查看其他用户的战队帖子
+		boolean visible = true; //前期默认可以查看用户战队帖子
+		if (isNew) {
+			return service.getNewUserTopic(userId, visible);
+		} else {
+			return service.getMoreUserTopic(userId, getParaToInt("minTopicId"), visible);
+		}
+	}
+
+	private void setPostResult(Topic topic) {
+		if (topic != null) {
+			addParam("topic", topic);
+			System.out.println("topic=" + topic);
+		} else {
+			setResult(Status.OPERATE_FAILD, "发表帖子失败!");
+		}
+	}
+}

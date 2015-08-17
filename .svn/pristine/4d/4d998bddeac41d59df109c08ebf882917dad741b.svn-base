@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ehcache xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="ehcache.xsd"
+         updateCheck="false" monitoring="autodetect"
+         dynamicConfig="true">
+         
+    <diskStore path="java.io.tmpdir"/>
+    
+    <defaultCache
+           maxEntriesLocalHeap="10000"
+           eternal="false"
+           overflowToDisk="true"
+           timeToIdleSeconds="20"
+           timeToLiveSeconds="60">
+    </defaultCache>
+    
+    <!--
+	Note that when a cache is eternal, timeToLive and
+    timeToIdle are not used and do not need to be specified.
+    -->
+    <cache name="userTokenCache"
+           maxEntriesLocalHeap="1000000"
+           maxEntriesLocalDisk="1000000"
+           eternal="true"
+           overflowToDisk="true"
+           diskSpoolBufferSizeMB="20"
+           memoryStoreEvictionPolicy="LFU"
+           transactionalMode="off"
+            />
+    
+    <cache name="objectCache"
+           maxEntriesLocalHeap="1000"
+           maxEntriesLocalDisk="1000"
+           eternal="false"
+           overflowToDisk="false"
+           timeToIdleSeconds="300"
+           timeToLiveSeconds="600"
+           memoryStoreEvictionPolicy="LFU"
+           transactionalMode="off"
+            />
+            
+   <cache name="codeCache"
+           maxEntriesLocalHeap="1000"
+           maxEntriesLocalDisk="1000"
+           eternal="false"
+           overflowToDisk="false"
+           timeToIdleSeconds="3600"
+           timeToLiveSeconds="3600"
+           memoryStoreEvictionPolicy="LFU"
+           transactionalMode="off"
+            />
+</ehcache>

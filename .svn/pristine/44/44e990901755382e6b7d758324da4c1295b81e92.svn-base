@@ -1,0 +1,73 @@
+var manageDirective = angular.module('manageDirective', []);
+
+manageDirective.directive('myTable', function() {
+    // Runs during compile
+    return {
+        // name: '',
+        // priority: 1,
+        // terminal: true,
+        // scope: {}, // {} = isolate, true = child, false/undefined = no change
+        // controller: function($scope, $element, $attrs, $transclude) {},
+        // require: 'ngModel', // Array = multiple requires, ? = optional, ^ = check parent elements
+        restrict: 'AE', // E = Element, A = Attribute, C = Class, M = Comment
+        // template: '',
+        templateUrl: '../manage/tpls/table.html',
+        replace: false, //将自定义标签完全移除
+        // transclude: true,
+        // compile: function(tElement, tAttrs, function transclude(function(scope, cloneLinkingFn){ return function linking(scope, elm, attrs){}})),
+        link: function($scope, iElm, iAttrs, controller) {
+
+        }
+    };
+
+
+});
+
+
+manageDirective.directive("myAlert", function() {
+    return {
+        // name: '',
+        // priority: 1,
+        // terminal: true,
+        // scope: {}, // {} = isolate, true = child, false/undefined = no change
+        // controller: function($scope, $element, $attrs, $transclude) {},
+        // require: 'ngModel', // Array = multiple requires, ? = optional, ^ = check parent elements
+        restrict: 'E', // E = Element, A = Attribute, C = Class, M = Comment
+        // template: '',
+        templateUrl: '../manage/tpls/alert.html',
+        // replace: true,
+        // transclude: true,
+        // compile: function(tElement, tAttrs, function transclude(function(scope, cloneLinkingFn){ return function linking(scope, elm, attrs){}})),
+        // 可以在指令中设置自动隐藏
+        link: function($scope, iElm, iAttrs, controller) {
+            // console.dir(iElm);
+            // console.dir(iAttrs);
+            // $(iElm).slideDown('slow');
+        }
+    };
+});
+
+//即使没有依赖，['topicService',function (topicService)里面也不可为空
+manageDirective.directive("myPaginate",function () {
+    return {
+        // name: '',
+        // priority: 1,
+        // terminal: true,
+        // scope: true, // {} = isolate,隔离作用域 true = child, false/undefined = no change
+        // controller: function($scope, $element, $attrs, $transclude) {},
+        // require: 'ngModel', // Array = multiple requires, ? = optional, ^ = check parent elements
+        restrict: 'AE', // E = Element, A = Attribute, C = Class, M = Comment
+        // template: '',
+         templateUrl: '../manage/tpls/paginate.html',
+        // replace: true,
+         transclude: true,
+        // compile: function(tElement, tAttrs, function transclude(function(scope, cloneLinkingFn){ return function linking(scope, elm, attrs){}})),
+        link: function($scope, iElm, iAttrs, controller) {
+            console.dirxml($scope.paginate);
+            console.dirxml(iElm);
+            console.dirxml(iAttrs);
+            console.dirxml(controller);
+            
+        }
+    };
+});

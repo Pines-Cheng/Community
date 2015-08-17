@@ -1,0 +1,42 @@
+<div class="am-g">
+    <div class="am-u-sm-12">
+        <form class="am-form">
+            <table class="am-table am-table-striped am-table-hover table-main am-text-nowrap">
+                <thead>
+                    <tr>
+                        <th class="table-check">
+                            <input type="checkbox" />
+                        </th>
+                        <th class="table-userId" style="width:10%;">用户ID</th>
+                        <th class="table-username" style="width:10%;">用户名</th>
+                        <th class="table-originId" style="width:10%;">帖子ID</th>
+                        <th class="table-content am-hide-sm-only" style="width:45%;">内容预览</th>
+                        <th class="table-imageNum am-hide-sm-only" style="width:5%;">图片数</th>
+                        <th class="table-set" style="width:20%;">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <input type="checkbox" />
+                        </td>
+                        <td>1</td>
+                        <td><a href="#">spider</a></td>
+                        <td>1234</td>
+                        <td class="am-hide-sm-only">今天吃饭很开心啊！</td>
+                        <td class="am-hide-sm-only">3</td>
+                        <td>
+                            <div class="am-btn-toolbar">
+                                <div class="am-btn-group am-btn-group-xs">
+                                    <button class="am-btn am-btn-default am-btn-xs am-text-secondary"><span class="am-icon-pencil-square-o"></span> 编辑</button>
+                                    <!--  <button class="am-btn am-btn-default am-btn-xs am-hide-sm-only"><span class="am-icon-copy"></span> 复制</button>-->
+                                    <button class="am-btn am-btn-default am-btn-xs am-text-danger am-hide-sm-only"><span class="am-icon-trash-o"></span> 删除</button>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </form>
+    </div>
+</div>

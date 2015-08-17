@@ -1,0 +1,29 @@
+var manageService = angular.module('manageService', []);
+
+manageService.factory('androidExceptionService', ['$http', function($http) {
+
+    //不返回的内容依赖注入后也无法获取
+    var getFileInfoListURL = "/Community/exception/show";
+    var deleteFileURL = "/Community/exception/delete";
+
+    //函数需要返回之后才可以调用
+    return {
+        getFileInfoList: function() {
+            return $http.get(getFileInfoListURL);
+
+        },
+
+        //使用post需要注意
+        deleteFile: function(fileName) {
+            return $http.post(deleteFileURL, $.param({
+                "fileName": fileName
+            }), {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                }
+            });
+
+            console.log($.param({ "fileName": fileName}));
+        }
+    };
+}]);

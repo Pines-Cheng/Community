@@ -1,0 +1,4 @@
+<div ng-controller="showDetailController">
+<button ng-click="test()">按钮</button>
+</div>
+

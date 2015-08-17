@@ -1,0 +1,28 @@
+<div ng-controller="leftMenuController" class="admin-sidebar am-offcanvas" id="admin-offcanvas">
+    <div class="am-offcanvas-bar admin-offcanvas-bar">
+        <ul class="am-list admin-sidebar-list">
+            <!-- 使用ui-sref链接到contentManage -->
+            <li><a ui-sref="contentManage" ng-click="setFirstTips($event)"><span class="am-icon-home"></span> 首页</a></li>
+            <li class="admin-parent">
+                <a class="am-cf" data-am-collapse="{target: '#collapse-nav'}" ng-click="setFirstTips($event)"><span class="am-icon-gears"></span> 管理菜单 <span class="am-icon-angle-right am-fr am-margin-right"></span></a>
+                <ul class="am-list am-collapse admin-sidebar-sub am-in" id="collapse-nav">
+                    <!-- 使用ui-sref 指令链接到特定状态 -->
+                    <li><a ui-sref="topicManage" ng-click="setSecondTips($event)" ><span class="am-icon-file-text"></span> 内容管理</a></li>
+                    <li><a ui-sref="logManage" ng-click="setSecondTips($event)"><span class="am-icon-calendar"></span> 日志管理</a></li>
+                </ul>
+                <a class="am-cf" data-am-collapse="{target: '#collapse-nav-bug'}"><span class="am-icon-exclamation-triangle" ng-click="setFirstTips($event)"></span> 错误收集 <span class="am-icon-angle-right am-fr am-margin-right"></span></a>
+                <ul class="am-list am-collapse admin-sidebar-sub am-in" id="collapse-nav-bug">
+                    <!-- 使用ui-sref 指令链接到特定状态 ng-click绑定-->
+                    <li><a ui-sref="androidExceptionManage" ng-click="setSecondTips($event)"><span class="am-icon-android"></span> 异常反馈</a></li>
+                    <li><a ui-sref="androidExceptionManage" ng-click="setSecondTips($event)"><span class="am-icon-android"></span> 异常反馈2</a></li>
+                </ul>
+            </li>
+        </ul>
+        <div class="am-panel am-panel-default admin-sidebar-panel">
+            <div class="am-panel-bd">
+                <p><span class="am-icon-bookmark"></span> 公告</p>
+                <p>新格投资</p>
+            </div>
+        </div>
+    </div>
+</div>

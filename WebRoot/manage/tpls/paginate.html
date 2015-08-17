@@ -1,0 +1,16 @@
+<ul class="am-pagination am-fr ">
+    <li><a href="javascript:void(0)">«</a></li>
+    <li class="pageNumbers"><a href="javascript:void(0)">1</a></li>
+    <li class="pageNumbers"><a href="javascript:void(0)">2</a></li>
+    <li class="pageNumbers"><a href="javascript:void(0)">3</a></li>
+    <li class="pageNumbers"><a href="javascript:void(0)">4</a></li>
+    <li class="pageNumbers"><a href="javascript:void(0)">5</a></li>
+    <li><a href="javascript:void(0)">»</a></li>
+    <li>
+        <div class="am-input-group am-input-group-defaulet am-fr" style="width:120px; position: relative;top: 12px;">
+            <input type="text" class="am-form-field" placeholder="页数" ng-model="pageJumpNum" >
+            <span class="am-input-group-label" ng-click="pageJump(pageJumpNum)"><a href="">跳转</a></span>
+        </div>
+    </li>
+    <li> <span>共{{paginate.pageCount}}页</span></li>
+</ul>

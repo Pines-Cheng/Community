@@ -1,0 +1,111 @@
+package com.forex.controller;
+
+import java.io.File;
+import java.util.ArrayList;
+
+import com.forex.util.filefilter.DirFilter;
+import com.jfinal.upload.UploadFile;
+
+public class ExceptionController extends BaseController {
+
+	final private String EXCEPTION_DIR_NAME = "exception";
+
+	/**
+	 * 上传一个或多个文件
+	 */
+	public void uploadFiles() {
+
+		java.util.List<String> fileNameList = new ArrayList<String>();
+
+		java.util.List<UploadFile> fileList = getFiles(EXCEPTION_DIR_NAME, // 获取上传的文件，放到upload/exception/下
+				1024 * 1024);
+
+		for (UploadFile uploadFile : fileList) {
+			System.out.println("上传的文件名：" + uploadFile.getOriginalFileName()
+					+ "  保存的文件：" + uploadFile.getFileName() + "  目录："
+					+ uploadFile.getSaveDirectory() + "  文件类型："
+					+ uploadFile.getContentType());
+			fileNameList.add(uploadFile.getOriginalFileName());
+		}
+
+		// 正确则返回上传的文件信息
+		if (fileList.size() == 0) {
+			setResult(Status.EMPTY_FILE, "上传文件为空");
+			renderJson();
+		} else {
+			// 返回文件上传的文件名
+			renderJson("uploadFiles", fileNameList);
+		}
+
+	}
+
+//	public void uploadFile() {
+//		UploadFile uploadFile = getFile();
+//		if (uploadFile != null) {
+//			System.out.println(uploadFile.getFileName() + "  "
+//					+ uploadFile.getSaveDirectory() + " "
+//					+ uploadFile.getContentType());
+//			renderJson("saveDirectory", uploadFile.getSaveDirectory());
+//		} else {
+//			setResult(Status.EMPTY_FILE, "上传文件接受失败");
+//			renderJson();
+//		}
+//	}
+
+	public void delete() {
+		String exceptionDirString = getRequest().getServletContext().getRealPath("/") + "upload"
+				+ File.separator + EXCEPTION_DIR_NAME; // exception上传的文件夹绝对路径
+		String fileURL = getPara("fileURL");
+		if (fileURL == null || fileURL.isEmpty()) {
+			setResult(Status.INVALID_ARGUMENT, "参数无效");
+
+		}
+		System.out.println(fileURL);
+		String[] tempString = fileURL.split("/");
+		String fileName = tempString[tempString.length - 1];
+		File file = new File(exceptionDirString + File.separator + fileName);
+		if (!file.exists()) {
+			setResult(Status.INVALID_ARGUMENT, "参数无效");
+		} else {
+			file.delete();
+			// forwardAction("/exception/show");
+			redirect("/exception/show");
+		}
+	}
+
+	public void show() {
+		ArrayList<String> fileList = new ArrayList<String>();
+		String exceptionDirString = getRequest().getServletContext().getRealPath("/") + "upload"
+				+ File.separator + EXCEPTION_DIR_NAME; // exception上传的文件夹绝对路径
+
+		// 获取文件夹下所有文件
+		String exceptionURLString = getRequest().getContextPath() + "/upload/"
+				+ EXCEPTION_DIR_NAME;
+		// 上传的文件夹的URI
+		File exceptionDirFile = new File(exceptionDirString);
+		System.out.println(exceptionDirString);
+		File[] files = exceptionDirFile.listFiles(new DirFilter());
+
+		if (files != null && files.length != 0) {
+			for (int i = 0; i < files.length; i++) {
+				fileList.add(exceptionURLString + "/" + files[i].getName());
+				// 生成超链接
+				System.out.println(exceptionURLString + "/"
+						+ files[i].getName());
+			}
+		} else {
+			fileList.add("文件夹为空！");
+		}
+
+		// 按时间排列(需要再做)
+
+		setAttr("fileList", fileList);
+
+		render("showException.jsp");
+	}
+
+	public void test() {
+		render("test.html");
+	}
+
+}

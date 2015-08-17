@@ -1,0 +1,5 @@
+jdbcUrl = jdbc:mysql://127.0.0.1/niurenhui?zeroDateTimeBehavior=convertToNull
+user = root
+password = ShZh_forex_4
+devMode = true
+savePath = /usr/share/web/upload/

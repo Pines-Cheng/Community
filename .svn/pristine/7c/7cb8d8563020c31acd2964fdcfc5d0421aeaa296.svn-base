@@ -1,0 +1,58 @@
+<!-- 自己写一个指令玩玩 -->
+<!-- 
+param:
+
+    configs.tableTitleConfig=[{width:"",title:""}]   表的宽度及标题
+    configs.operateShow.edit //按钮显示
+    configs.operateShow.copy 
+    configs.operateShow.delete 
+
+    table.selectAll //全选
+    androidException.select    //单选
+    contentArray=[{date:"",path:""}]        表的内容    
+
+
+
+function:
+    selectAll();
+    edit();
+    copy();
+    delete();
+ -->
+<div class="am-g">
+    <div class="am-u-sm-12">
+        <form class="am-form">
+            <table class="am-table am-table-striped am-table-hover table-main am-text-nowrap am-table-centered" id="exceptionTable">
+                <thead>
+                    <tr>
+                        <th style="width:1%;">
+                            <input type="checkbox" ng-model="table.totalOperate"  />
+                        </th>
+                        <th ng-repeat="config in configs.tableTitleConfig" style="width:{{config.width}};">{{config.title}}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-repeat="content in contents">
+                        <td>
+                            <!--ng-checked 如果表达式为真，则在元素上放置"checked"属性。
+                            ng-change 当值的变化来自于模型时，不会对表达式进行计算。-->
+                            <input type="checkbox" ng-checked="table.totalOperate" fileName={{content.fileName}} />
+                        </td>
+                        <td>{{$index+1}}</td>
+                        <td><a href="{{content.fileURL}}"> {{content.fileName}}</a></td>
+                        <td>{{content.date | date:'yyyy-MM-dd HH：mm：ss'}}</td>
+                        <td>
+                            <div >
+                                <div class="am-btn-group am-btn-group-xs">
+                                    <button class="am-btn am-btn-default am-btn-xs am-text-secondary" ng-show="{{configs.operateShow.edit}}"> <a href="{{content.fileURL}}"><span class="am-icon-pencil-square-o" ></span> 编辑</a></button>
+                                    <button class="am-btn am-btn-default am-btn-xs " ng-show="{{configs.operateShow.copy}}" ng-click="copy()"><span class="am-icon-copy"></span> 复制</button>
+                                    <button class="am-btn am-btn-default am-btn-xs am-text-danger " ng-show="{{configs.operateShow.delete}}" ng-click="delete(content.fileName)"><span class="am-icon-trash-o"></span> 删除</button>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </form>
+    </div>
+</div>

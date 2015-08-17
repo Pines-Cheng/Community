@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>登录</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="format-detection" content="telephone=no">
+    <!-- 指定网页使用 webkit 引擎渲染 -->
+    <meta name="renderer" content="webkit">
+    <!-- 防止百度转码后贴广告 -->
+    <meta http-equiv="Cache-Control" content="no-siteapp" />
+    <!-- CSS -->
+    <link rel="stylesheet" href="http://cdn.amazeui.org/amazeui/2.4.2/css/amazeui.min.css" />
+    <!-- 自己的CSS -->
+    <link rel="stylesheet" href="../css/common.css" />
+</head>
+<div class="am-g" >
+    <div class="am-u-lg-4 am-u-md-6 am-u-sm-centered">
+        <img class="am-center am-img-responsive " src="../img/logo.png" alt="logo" />
+        <form method="post" class="am-form">
+            <label for="user">账号:</label>
+            <input type="text" name="user" id="user" value="" maxlength="40" placeholder="请输入用户名" required>
+            <br>
+            <label for="password">密码:</label>
+            <input type="password" name="password" id="password" value="" maxlength="40" placeholder="请输入密码" required>
+            <br>
+            <label for="remember-me">
+                <input id="remember-me" type="checkbox"> 记住密码
+            </label>
+            <br />
+            <div class="am-cf">
+                <input type="submit" name="" value="登 录" class="am-btn am-btn-primary am-btn-sm am-fl">
+                <input type="submit" name="" value="忘记密码 ^_^? " class="am-btn am-btn-default am-btn-sm am-fr">
+            </div>
+        </form>
+    </div>
+</div >
+
+<body>
+</body>
+
+</html>

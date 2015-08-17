@@ -1,0 +1,225 @@
+package com.forex.controller;
+
+import java.io.File;
+import java.util.List;
+import java.util.Map;
+
+import com.forex.controller.interceptor.AuthInterceptor;
+import com.forex.controller.interceptor.UploadFileInterceptor;
+import com.forex.controller.validator.RegisterValidator;
+import com.forex.factory.FileNameFactory;
+import com.forex.factory.SaveDirectoryFactory;
+import com.forex.model.bean.Authority;
+import com.forex.model.bean.Group;
+import com.forex.model.bean.User;
+import com.forex.model.service.GroupService;
+import com.forex.model.service.UserService;
+import com.forex.util.ImageHelper;
+import com.jfinal.aop.Before;
+import com.jfinal.plugin.activerecord.Db;
+import com.jfinal.plugin.activerecord.Record;
+import com.jfinal.upload.UploadFile;
+
+public class UserController extends BaseController {
+
+	private UserService userService = new UserService();
+
+	// 清除所有级别的拦截器 UPPER清除上层拦截器对此Action的拦截
+	@Before(RegisterValidator.class)
+	public void register() {
+		if (userService.validatorCode(getPara("tel"), getPara("code"))) {
+			String deviceId = getPara("device_id");
+			User u = userService.getUserByDeviceId(deviceId);
+			Record record = Db.findFirst("select * from user_atten_tags where user_id=?", u.get("id"));
+			
+			User user = userService.addUser(getPara("tel"), getPara("password"), getPara("username"), deviceId);
+			
+			GroupService groupService = new GroupService();
+			if (record != null && record.getStr("tags") != null) {
+				String tags = record.getStr("tags");
+				groupService.joinGroupAccordToInterest(user.getLong("id"), tags.split(","));
+			}
+			
+			Group group = groupService.getGroupByInviteCode(getPara("inviteCode"));
+			if (group != null) {
+				groupService.joinGroup(user.getLong("id"), group.getLong("id"));
+			}
+			//TODO 更新用户阅读习惯到这个用户
+			setLoginResult(user, Status.OPERATE_FAILD, "注册失败!");
+		} else {
+			setResult(Status.INVALID_MSG_CODE, "短信验证失败!");
+			renderJson();
+		}
+	}
+	
+	/**
+	 * 访客登录
+	 * device_id: 设备唯一标识号的MD5值
+	 */
+	public void guest() {
+		String deviceId = getPara("device_id");
+		User user = userService.addUser(deviceId);
+		setLoginResult(user, Status.OPERATE_FAILD, "注册失败!");
+	}
+
+	public void login() {
+		User user = userService.getUser(getPara("tel"), getPara("password"));
+		if (user != null) userService.createToken(user.getLong("id"), Authority.Write);
+		setLoginResult(user, Status.ERR_TEL_OR_PWD, "用户名或密码错误!");
+	}
+	
+	//必须参数 tel  #生成验证码，并通过短信发送给用户
+	public void code() {
+		if (!userService.createCode(getPara("tel"))) {
+			setResult(Status.MSG_SEND_ERR, "短信发送失败!");
+		}
+		renderJson();
+	}
+	
+	@Before(AuthInterceptor.class)
+	public void updateBase() {
+		long userId = getAttr("userId");
+		boolean result = userService.updateBase(userId, getPara("tel"), getPara("password"));
+		if (result) {
+			Authority token = userService.getToken(userId, false);
+			addParam("token", token);
+			User user = userService.getUserById(userId);
+			user.clearPwdAndSalt();
+			addParam("user", user);
+		} else {
+			setResult(Status.OPERATE_FAILD, "注册失败!");
+		}
+		renderJson();
+	}
+
+	//必须参数 token,receiverId,score,content  #给用户打分
+	@Before(AuthInterceptor.class)
+	public void mark() {
+		long userId = getAttr("userId");
+		if (!userService.mark(userId, getParaToLong("receiverId"),
+				getParaToInt("score"), getPara("content"))) {
+			setResult(Status.OPERATE_FAILD, "用户评分失败!");
+		}
+		renderJson();
+	}
+	
+	//必须参数 token, userId
+	@Before(AuthInterceptor.class)
+	public void get() {
+		//long userId = getAttr("userId");
+		long userId = getParaToLong("userId");
+		User user = userService.getUserById(userId);
+		renderJson("user", user);
+	}
+	
+	//可选参数 start  #得到排行榜前面的用户
+	@Before(AuthInterceptor.class)
+	public void top() {
+		String para = getPara("start");
+		int start = para == null ? 0 : Integer.valueOf(para);
+		renderJson("users", userService.getTopUsers(start));
+	}
+	
+	//必须参数 groupId  #得到群组下面的用户
+	@Before(AuthInterceptor.class)
+	public void groupUsers() {
+		renderJson("users", userService.getGroupUsers(getParaToLong("groupId")));
+	}
+	
+	@Before(AuthInterceptor.class)
+	public void inviteUsers() {
+		Map<String,List<User>> map = userService.getInviteUsers(getParaToLong("groupId"));
+		addParam("nUsers", map.get("nUsers"));
+		addParam("rUsers", map.get("rUsers"));
+		renderJson();
+	}
+	
+	//必须参数 token, receiverId  #关注某人
+	@Before(AuthInterceptor.class)
+	public void follow() {
+		long userId = getAttr("userId");
+		if (!userService.payAttention(userId, getParaToLong("receiverId"))) {
+			setResult(Status.OPERATE_FAILD, "关注失败!");
+		}
+		renderJson();
+	}
+	
+	//复制交易
+	@Before(AuthInterceptor.class)
+	public void copy() {
+		long userId = getAttr("userId");
+		if (!userService.copyInvest(userId, getParaToLong("copyId"))) {
+			setResult(Status.OPERATE_FAILD, "");
+		}
+		renderJson();
+	}
+	
+	//获取关注人列表
+	@Before(AuthInterceptor.class)
+	public void followUsers() {
+		long userId = getAttr("userId");
+		renderJson("users", userService.getFollowedUsers(userId));
+	}
+	
+	//获取我抱的大腿的列表
+	@Before(AuthInterceptor.class)
+	public void copyUsers() {
+		long userId = getAttr("userId");
+		renderJson("users", userService.getCopyUsers(userId));
+	}
+	
+	//必须参数 token, 可选 username,intro
+	@Before(UploadFileInterceptor.class)
+	public void update() {
+		long userId = getAttr("userId");
+		
+		UploadFile file = getAttr("file");
+		
+		if (file != null) {
+			String saveDirectory = SaveDirectoryFactory.getUserSaveDirectory(file.getSaveDirectory());
+			
+			File destFile = new File(saveDirectory, FileNameFactory.createUserPhotoName(userId));
+			File thumbFile = new File(saveDirectory, FileNameFactory.thumbUserPhotoName(userId));
+			file.getFile().renameTo(destFile);
+			System.out.println(destFile.getAbsolutePath());
+			ImageHelper.compressPic(destFile, thumbFile);
+		}
+		String username = getPara("username");
+		String intro = getPara("intro");
+		if (!userService.update(userId, username, intro, file != null)) {
+			setResult(Status.OPERATE_FAILD, "用户更新失败");
+		}
+		renderJson();
+	}
+	
+	//必须参数token #取消关注
+	@Before(AuthInterceptor.class)
+	public void cancelFollow() {
+		long userId = getAttr("userId");
+		if (!userService.cancelAttention(userId, getParaToLong("receiverId"))) {
+			setResult(Status.OPERATE_FAILD, "取消关注失败!");
+		}
+		renderJson();
+	}
+	
+	@Before(AuthInterceptor.class)
+	public void addUserInterest() {
+		long userId = getAttr("userId");
+		String interests = getPara("interests");
+		userService.addInterests(userId, interests);
+		//TODO转发到另一台服务器
+		renderJson();
+	}
+
+	private void setLoginResult(User user, Status stat, String errText) {
+		if (user != null) {
+			Authority token = userService.getToken(user.getLong("id"));
+			addParam("token", token);
+			user.clearPwdAndSalt();
+			addParam("user", user);
+		} else {
+			setResult(stat, errText);
+		}
+		renderJson();
+	}
+}
